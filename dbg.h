@@ -29,6 +29,8 @@ License (MIT):
 #ifndef DBG_MACRO_DBG_H
 #define DBG_MACRO_DBG_H
 
+// __unix__宏：在unix-like系统(linux，freebsd等)上由编译器自动定义
+//_MSC_VER宏：MSVC（microsoft visual c++）编译器定义，表示msvc编译器版本
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #define DBG_MACRO_UNIX
 #elif defined(_MSC_VER)
@@ -42,6 +44,7 @@ License (MIT):
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+// 操作输入/输出流的格式化功能的模板类以及函数等
 #include <iomanip>
 #include <ios>
 #include <iostream>
@@ -51,13 +54,16 @@ License (MIT):
 #include <stack>
 #include <string>
 #include <tuple>
+// <type_traits>提供模板类和函数用以在编译时查询和操作类型属性，通常用于模版元编程
 #include <type_traits>
 #include <vector>
 
+// <unistd.h> unix和类unix系统上的标准头文件，提供了对posix系统api的访问，包括文件、目录、程序、进程和管道等操作的函数和符号常量
 #ifdef DBG_MACRO_UNIX
 #include <unistd.h>
 #endif
 
+// __cplusplus宏，编译器定义，表示编译器遵循的c++标准版本，其值对应特定的年份和月份
 #if __cplusplus >= 201703L
 #define DBG_MACRO_CXX_STANDARD 17
 #elif __cplusplus >= 201402L
@@ -66,6 +72,8 @@ License (MIT):
 #define DBG_MACRO_CXX_STANDARD 11
 #endif
 
+// std::optional：一个容器，用于存储一个值或者不包含任何值
+// std::variant: 类型安全的联合体
 #if DBG_MACRO_CXX_STANDARD >= 17
 #include <optional>
 #include <variant>
@@ -73,6 +81,15 @@ License (MIT):
 
 namespace dbg {
 
+/**
+ * @brief 判断是否启用彩色输出
+ *
+ * 判断当前环境下是否启用了彩色输出功能。
+ * fileno： 获取文件流(FILE*, std::cout等)对应的文件描述符
+ * isatty： 判断文件描述符是否指向终端
+ * 文件描述符：一个非负整数，类Unix系统重唯一标志一个打开的文件、输入输出设备或网络套接字等
+ * @return 如果启用了彩色输出，则返回 true；否则返回 false。
+ */
 inline bool isColorizedOutputEnabled() {
 #if defined(DBG_MACRO_FORCE_COLOR)
   return true;
@@ -90,6 +107,9 @@ namespace pretty_function {
 // Compiler-agnostic version of __PRETTY_FUNCTION__ and constants to
 // extract the template argument in `type_name_impl`
 
+// __PRETTY_FUNCTION__ ： 编译器定义，不属于c++标准，表示当前函数的函数签名
+// __GNUC__ ： 编译器定义，gcc/clang编译器都会定义
+// __clang__：clang编译器定义
 #if defined(__clang__)
 #define DBG_MACRO_PRETTY_FUNCTION __PRETTY_FUNCTION__
 static constexpr size_t PREFIX_LENGTH =
@@ -113,6 +133,10 @@ static constexpr size_t SUFFIX_LENGTH = sizeof(">(void)") - 1;
 
 // Formatting helpers
 
+//
+// static_assert: 用于在编译时检查一个条件是否为真，如果条件为假则触发编译错误。
+// std::is_integral<T>：用于编译时判断类型T是否为整型
+// std::is_integral是一个模版结构体，成员value是一个编译期常量（true or false）
 template <typename T>
 struct print_formatted {
   static_assert(std::is_integral<T>::value,
@@ -121,6 +145,7 @@ struct print_formatted {
   print_formatted(T value, int numeric_base)
       : inner(value), base(numeric_base) {}
 
+// 类型转换运算符：将对象转换成T类型，隐式类型转换。如果有explicit关键字，则为显式转换。
   operator T() const { return inner; }
 
   const char* prefix() const {
@@ -165,6 +190,7 @@ const char* type_name_impl() {
 template <typename T>
 struct type_tag {};
 
+// 模板函数，该函数在给定类型T（且T不是数组类型）时，返回该类型的名称（去除了前缀和后缀）。这种技术常用于调试、日志记录或运行时类型信息的获取。
 template <int&... ExplicitArgumentBarrier, typename T>
 typename std::enable_if<(std::rank<T>::value == 0), std::string>::type
 get_type_name(type_tag<T>) {
